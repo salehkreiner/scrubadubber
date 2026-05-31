@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            cgo: "0" # tray is pure-Go on Windows
+            race: "" # race detector needs cgo; not used on Windows
+          - os: macos-latest
+            cgo: "1" # systray uses Cocoa (cgo) on macOS
+            race: "-race"
+    runs-on: ${{ matrix.os }}
+    env:
+      CGO_ENABLED: ${{ matrix.cgo }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          check-latest: true
+      - name: gofmt
+        shell: bash
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then echo "needs gofmt:"; echo "$unformatted"; exit 1; fi
+      - run: go vet ./...
+      - run: go test ${{ matrix.race }} ./... -count=1
+      - run: go build ./...

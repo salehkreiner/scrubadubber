@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scrubadubber Settings</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+    max-width: 480px; margin: 2rem auto; padding: 0 1rem;
+  }
+  h1 { font-size: 1.3rem; margin: 0 0 .25rem; }
+  .status { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 1.5rem; color: #666; }
+  .dot { width: .8rem; height: .8rem; border-radius: 50%; background: #8b949e; flex: none; }
+  .dot.healthy { background: #2ea043; }
+  .dot.degraded { background: #e3b341; }
+  .dot.down { background: #f85149; }
+  label { display: block; margin: 1rem 0 .25rem; font-weight: 600; }
+  input[type=text], select { width: 100%; padding: .45rem .5rem; box-sizing: border-box;
+    border: 1px solid #8884; border-radius: 6px; background: transparent; color: inherit; }
+  .row { display: flex; align-items: center; gap: .5rem; margin-top: 1rem; }
+  .row label { margin: 0; font-weight: 400; }
+  fieldset { margin-top: 1rem; border: 1px solid #8884; border-radius: 6px; }
+  legend { font-weight: 600; padding: 0 .4rem; }
+  .actions { margin-top: 1.5rem; display: flex; gap: .5rem; align-items: center; }
+  button { padding: .5rem .9rem; border-radius: 6px; border: 1px solid #8884; cursor: pointer;
+    background: #2ea043; color: #fff; font: inherit; }
+  button.secondary { background: transparent; color: inherit; }
+  #msg { font-size: .85rem; color: #2ea043; }
+  #msg.error { color: #f85149; }
+</style>
+</head>
+<body>
+  <h1>Scrubadubber</h1>
+  <div class="status"><span id="dot" class="dot"></span><span id="statusText">Loading…</span></div>
+
+  <form id="f">
+    <label for="hub_url">Hub URL</label>
+    <input type="text" id="hub_url" name="hub_url" placeholder="http://127.0.0.1:8383">
+
+    <label for="mode">Scrubbing mode</label>
+    <select id="mode" name="mode">
+      <option value="mask">mask</option>
+      <option value="redact">redact</option>
+      <option value="off">off</option>
+    </select>
+
+    <div class="row">
+      <input type="checkbox" id="start_on_login">
+      <label for="start_on_login">Start on login</label>
+    </div>
+
+    <fieldset>
+      <legend>Protected tools</legend>
+      <div class="row">
+        <input type="checkbox" id="tool_claude" checked>
+        <label for="tool_claude">Claude Code</label>
+      </div>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit">Save</button>
+      <button type="button" class="secondary" id="openConfig">Open config file</button>
+      <span id="msg"></span>
+    </div>
+  </form>
+
+<script>
+const TOKEN = "__TOKEN__";
+
+async function api(path, opts) {
+  opts = opts || {};
+  opts.headers = Object.assign({ "X-Scrub-Token": TOKEN }, opts.headers || {});
+  const r = await fetch(path, opts);
+  if (!r.ok) throw new Error((await r.text()) || r.statusText);
+  return r;
+}
+
+const $ = (id) => document.getElementById(id);
+
+async function loadSettings() {
+  const s = await (await api("/api/settings")).json();
+  $("hub_url").value = s.hub_url || "";
+  $("mode").value = s.mode || "mask";
+  $("start_on_login").checked = !!s.start_on_login;
+  $("tool_claude").checked = (s.protected_tools || []).includes("claude-code");
+}
+
+async function refreshStatus() {
+  try {
+    const st = await (await api("/api/status")).json();
+    const dot = $("dot");
+    dot.className = "dot " + (st.hub_state || "");
+    const label = st.protected ? "Protected — Claude Code"
+      : (st.hub_state ? ("Hub " + st.hub_state) : "Unknown");
+    $("statusText").textContent = label + (st.version ? "  •  v" + st.version : "");
+  } catch (e) { /* server going away; ignore */ }
+}
+
+function setMsg(text, isError) {
+  const m = $("msg");
+  m.textContent = text;
+  m.className = isError ? "error" : "";
+}
+
+$("f").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const body = {
+    hub_url: $("hub_url").value.trim(),
+    mode: $("mode").value,
+    start_on_login: $("start_on_login").checked,
+    protected_tools: $("tool_claude").checked ? ["claude-code"] : []
+  };
+  try {
+    await api("/api/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    setMsg("Saved.", false);
+    refreshStatus();
+  } catch (err) {
+    setMsg(err.message, true);
+  }
+});
+
+$("openConfig").addEventListener("click", async () => {
+  try { await api("/api/open-config", { method: "POST" }); setMsg("Opened config file.", false); }
+  catch (err) { setMsg(err.message, true); }
+});
+
+loadSettings().catch((e) => setMsg(e.message, true));
+refreshStatus();
+setInterval(refreshStatus, 3000);
+</script>
+</body>
+</html>
