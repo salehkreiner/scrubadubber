@@ -23,8 +23,11 @@ const (
 	GitHubOwner = "salehkreiner"
 	// AppRepo is this repo; the updater polls it for new app releases.
 	AppRepo = "scrubadubber"
-	// HubRepo holds the (private) Hub binaries.
-	HubRepo = "scrubadubber-hub"
+	// HubRepo is the PUBLIC release mirror for the Hub binaries. The Hub source
+	// stays private (scrubadubber-hub); its CI publishes the compiled binaries +
+	// SHA256SUMS (and an example config) here so the installer can fetch them
+	// unauthenticated.
+	HubRepo = "scrubadubber-hub-releases"
 	// BridgeRepo holds the (public) bridge binaries.
 	BridgeRepo = "bridge-claude-code"
 
@@ -40,9 +43,11 @@ const (
 	LockPort = 8385
 
 	// PinnedHubVersion / PinnedBridgeVersion select which release to download.
-	// "latest" resolves to the newest GitHub release at install/update time;
-	// set a concrete tag (e.g. "v0.1.1") to pin a known-good build.
-	PinnedHubVersion    = "latest"
+	// "latest" resolves to the newest GitHub release at install/update time; a
+	// concrete tag pins a known-good build. The Hub is pinned because its public
+	// mirror tracks the private source's versioning and /releases/latest skips
+	// prereleases.
+	PinnedHubVersion    = "v0.1.3"
 	PinnedBridgeVersion = "latest"
 )
 
@@ -108,12 +113,12 @@ func ScrubSetupDownloadURL(tag string) string {
 	return fmt.Sprintf(releaseDownloadBase, GitHubOwner, BridgeRepo, tag, assetName("scrub-setup"))
 }
 
-// HubExampleConfigURL returns the raw URL of the Hub's example config for a tag.
-// Hub releases ship only binaries + SHA256SUMS, so the installer seeds the local
-// config from this file (the Hub is launched as `hub serve -config <path>`).
-func HubExampleConfigURL(tag string) string {
-	return fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/configs/config.example.yaml", GitHubOwner, HubRepo, tag)
-}
+// HubConfigAssetNames are the candidate filenames for the Hub's example config
+// published as a release asset. The Hub is launched as `hub serve -config
+// <path>`; on first install the installer seeds that file from the first of
+// these present in the Hub release. (The public mirror is releases-only, so the
+// config ships as a release asset rather than coming from a source tree.)
+var HubConfigAssetNames = []string{"config.example.yaml", "config.yaml"}
 
 // DefaultHubURL is the locally-managed Hub's traffic endpoint.
 func DefaultHubURL() string { return fmt.Sprintf("http://127.0.0.1:%d", HubPort) }
@@ -185,7 +190,7 @@ func SettingsPath() (string, error) {
 
 // HubConfigPath is the local Hub config file. The Hub is launched with
 // `hub serve -config <this path>`; on first install it is seeded from the Hub
-// repo's configs/config.example.yaml (see HubExampleConfigURL).
+// release's example-config asset (see HubConfigAssetNames).
 func HubConfigPath() (string, error) {
 	c, err := ConfigDir()
 	if err != nil {

@@ -83,13 +83,18 @@ func Install(ctx context.Context, opts Options) error {
 	if err := client.UpdateBinary(ctx, hubRel, config.HubAssetName(), filepath.Join(binDir, config.HubBinaryName())); err != nil {
 		return fmt.Errorf("download hub: %w", err)
 	}
-	// Hub releases ship only binaries; seed config.yaml from the repo's example
-	// so `hub serve -config <path>` has something to read.
+	// Seed config.yaml from the Hub release's example-config asset so
+	// `hub serve -config <path>` has something to read. (The public mirror is
+	// releases-only, so the config arrives as a release asset.)
 	if cfgPath, err := config.HubConfigPath(); err == nil {
 		if _, statErr := os.Stat(cfgPath); os.IsNotExist(statErr) {
-			opts.logf("Fetching default Hub config…")
-			if err := downloadConfig(ctx, client.HTTP, config.HubExampleConfigURL(hubRel.TagName), cfgPath); err != nil {
-				opts.logf("warning: fetch example config: %v", err)
+			if asset, ok := findConfigAsset(hubRel); ok {
+				opts.logf("Fetching default Hub config…")
+				if err := downloadConfig(ctx, client.HTTP, asset.URL, cfgPath); err != nil {
+					opts.logf("warning: fetch example config: %v", err)
+				}
+			} else {
+				opts.logf("note: Hub release has no example config asset; the Hub will use built-in defaults")
 			}
 		}
 	}
@@ -175,6 +180,16 @@ func downloadBinary(ctx context.Context, client *updater.Client, repo, version, 
 		return err
 	}
 	return client.UpdateBinary(ctx, rel, asset, dest)
+}
+
+// findConfigAsset returns the Hub release's example-config asset, if present.
+func findConfigAsset(rel updater.Release) (updater.Asset, bool) {
+	for _, name := range config.HubConfigAssetNames {
+		if a, ok := rel.Asset(name); ok {
+			return a, true
+		}
+	}
+	return updater.Asset{}, false
 }
 
 // downloadConfig fetches a raw config file (e.g. the Hub's example config) to

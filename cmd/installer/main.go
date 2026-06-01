@@ -42,6 +42,8 @@ func runInstall() {
 
 	opts := provision.Options{
 		AppVersion:    appVersionToInstall(),
+		HubVersion:    config.PinnedHubVersion,
+		BridgeVersion: config.PinnedBridgeVersion,
 		StartupTarget: appExe,
 		LaunchTarget:  appExe,
 		Log:           logf,

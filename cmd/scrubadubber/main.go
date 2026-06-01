@@ -183,7 +183,11 @@ func (a *app) maybeFirstRunProvision() {
 	}
 	go func() {
 		log.Printf("first run: provisioning Hub and bridge…")
-		opts := provision.Options{Log: func(f string, args ...any) { log.Printf(f, args...) }}
+		opts := provision.Options{
+			HubVersion:    config.PinnedHubVersion,
+			BridgeVersion: config.PinnedBridgeVersion,
+			Log:           func(f string, args ...any) { log.Printf(f, args...) },
+		}
 		if exe, err := os.Executable(); err == nil && a.cur.StartOnLogin {
 			opts.StartupTarget = exe
 		}

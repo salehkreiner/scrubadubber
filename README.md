@@ -11,7 +11,7 @@ Hub and bridge binaries — it contains **no scrubbing logic** itself.
 
 ```
 scrubadubber (this repo — public)
-    ├── downloads + manages → scrubadubber-hub binary   (private releases)
+    ├── downloads + manages → Hub binary  (public mirror: scrubadubber-hub-releases; source stays private)
     └── downloads + manages → bridge-claude-code binary (public releases)
 ```
 
@@ -112,17 +112,26 @@ Releases are built by `.github/workflows/release.yml` on a `v*` tag: Windows
 
 This app is complete and unit-tested.
 
-The **Hub contract is confirmed** against `scrubadubber-hub` **v0.1.3** (5 platform
-binaries + `SHA256SUMS`):
+The Hub source stays **private** (`scrubadubber-hub`); its CI cross-publishes the
+compiled binaries to the **public mirror `scrubadubber-hub-releases`**, which is
+what the installer/updater download (unauthenticated). The installer is **pinned
+to Hub `v0.1.3`**. The bridge comes from public `bridge-claude-code` (`latest`,
+currently v0.1.1).
+
+Hub contract (verified against scrubadubber-hub v0.1.3):
 
 - binary asset `hub_windows_amd64.exe` (and `hub_{darwin,linux}_{amd64,arm64}`),
 - launched as `hub serve -config <path>`,
 - health at `GET :8384/healthz` → `{"status":"ok"}` (a non-`ok` status shows as
   degraded/yellow),
-- config seeded from the repo's `configs/config.example.yaml` on first install,
+- config seeded on first install from a `config.example.yaml` release asset,
 - downloads SHA256-verified against the release's `SHA256SUMS`.
 
-Remaining to confirm: the **bridge** (`bridge-claude-code`) release asset names and
-`scrub-setup`'s `--yes` / `--uninstall` flags, and how the scrubbing **mode** maps
-into the Hub's `config.yaml` (today the mode is persisted in settings and the
-Hub's config is edited via **Open config file**).
+**Required before installs complete:** the `scrubadubber-hub-releases` mirror must
+have a **`v0.1.3`** release containing the `hub_{os}_{arch}` binaries, `SHA256SUMS`,
+and `config.example.yaml`. The Hub's release workflow cross-publishes these
+automatically (see scrubadubber-hub `.github/workflows`).
+
+Remaining to confirm: how the scrubbing **mode** maps into the Hub's `config.yaml`
+(today the mode is persisted in settings; the Hub config is edited via **Open
+config file**).
