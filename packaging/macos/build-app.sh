@@ -15,10 +15,10 @@ mkdir -p "$MACOS" "$RES"
 
 # systray requires cgo (Cocoa); build each arch then lipo into a fat binary.
 for ARCH in amd64 arm64; do
-  echo "building darwin/$ARCH…"
-  CGO_ENABLED=1 GOOS=darwin GOARCH="$ARCH" \
+  echo "building darwin/${ARCH}..."
+  CGO_ENABLED=1 GOOS=darwin GOARCH="${ARCH}" \
     go build -trimpath -ldflags "-X $PKG=$VERSION" \
-    -o "$MACOS/scrubadubber-$ARCH" ./cmd/scrubadubber
+    -o "$MACOS/scrubadubber-${ARCH}" ./cmd/scrubadubber
 done
 lipo -create -output "$MACOS/scrubadubber" "$MACOS/scrubadubber-amd64" "$MACOS/scrubadubber-arm64"
 rm -f "$MACOS/scrubadubber-amd64" "$MACOS/scrubadubber-arm64"

@@ -8,7 +8,7 @@ APP="$ROOT/dist/Scrubadubber.app"
 DMG="$ROOT/dist/scrubadubber.dmg"
 STAGE="$ROOT/dist/dmg-stage"
 
-[ -d "$APP" ] || { echo "missing $APP — run build-app.sh first" >&2; exit 1; }
+[ -d "$APP" ] || { echo "missing $APP - run build-app.sh first" >&2; exit 1; }
 
 rm -rf "$STAGE" "$DMG"
 mkdir -p "$STAGE"
