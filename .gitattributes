@@ -1,0 +1,11 @@
+# Normalize all text files to LF in the repo and on checkout (every OS), so the
+# Windows CI runner doesn't convert .go files to CRLF and trip `gofmt -l`.
+* text=auto eol=lf
+
+# Binary assets — never normalize or diff.
+*.png binary
+*.ico binary
+*.icns binary
+*.dmg binary
+*.exe binary
+*.syso binary
