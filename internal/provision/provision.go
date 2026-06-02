@@ -16,7 +16,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
+	"github.com/salehkreiner/scrubadubber/internal/bridgecheck"
 	"github.com/salehkreiner/scrubadubber/internal/config"
 	"github.com/salehkreiner/scrubadubber/internal/settings"
 	"github.com/salehkreiner/scrubadubber/internal/startup"
@@ -93,6 +95,19 @@ func Install(ctx context.Context, opts Options) error {
 				if err := downloadConfig(ctx, client.HTTP, asset.URL, cfgPath); err != nil {
 					opts.logf("warning: fetch example config: %v", err)
 				}
+				// Seed companion config files (e.g. patterns.example.yaml) next to
+				// config.yaml under their original names — config.yaml references
+				// them by name (resolved relative to itself), so a missing rule
+				// pack would crash the Hub on startup.
+				cfgDir := filepath.Dir(cfgPath)
+				for _, a := range hubRel.Assets {
+					if a.Name == asset.Name || !isConfigCompanion(a.Name) {
+						continue
+					}
+					if err := downloadConfig(ctx, client.HTTP, a.URL, filepath.Join(cfgDir, a.Name)); err != nil {
+						opts.logf("warning: fetch %s: %v", a.Name, err)
+					}
+				}
 			} else {
 				opts.logf("note: Hub release has no example config asset; the Hub will use built-in defaults")
 			}
@@ -159,6 +174,9 @@ func Uninstall(opts Options) error {
 	if p := filepath.Join(binDir, config.ScrubSetupBinaryName()); fileExists(p) {
 		_ = exec.Command(p, "--uninstall").Run() // best effort
 	}
+	// scrub-setup --uninstall doesn't reliably remove its shell-profile block,
+	// so strip it ourselves.
+	note(bridgecheck.RemoveProfileBlock())
 	if opts.StartupTarget != "" {
 		_ = startup.New(opts.StartupTarget).Disable()
 	}
@@ -190,6 +208,14 @@ func findConfigAsset(rel updater.Release) (updater.Asset, bool) {
 		}
 	}
 	return updater.Asset{}, false
+}
+
+// isConfigCompanion reports whether a release asset is a config file to seed
+// alongside config.yaml (e.g. patterns.example.yaml), versus a binary or
+// checksum file.
+func isConfigCompanion(name string) bool {
+	n := strings.ToLower(name)
+	return strings.HasSuffix(n, ".yaml") || strings.HasSuffix(n, ".yml") || strings.HasSuffix(n, ".json")
 }
 
 // downloadConfig fetches a raw config file (e.g. the Hub's example config) to

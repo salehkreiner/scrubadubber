@@ -2,16 +2,24 @@
 
 package bridgecheck
 
-import "golang.org/x/sys/windows/registry"
+import (
+	"os"
+	"path/filepath"
+)
 
-// Configured reports whether ANTHROPIC_BASE_URL is set in the user's persisted
-// environment (HKCU\Environment), which is what scrub-setup writes on Windows.
-func Configured() bool {
-	k, err := registry.OpenKey(registry.CURRENT_USER, "Environment", registry.QUERY_VALUE)
+// profilePaths returns the PowerShell profile files scrub-setup may have written
+// to — both Windows PowerShell 5.1 and PowerShell 7, per-user, current-host and
+// all-hosts variants.
+func profilePaths() []string {
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return false
+		return nil
 	}
-	defer k.Close()
-	v, _, err := k.GetStringValue(envVar)
-	return err == nil && v != ""
+	docs := filepath.Join(home, "Documents")
+	return []string{
+		filepath.Join(docs, "PowerShell", "profile.ps1"),
+		filepath.Join(docs, "PowerShell", "Microsoft.PowerShell_profile.ps1"),
+		filepath.Join(docs, "WindowsPowerShell", "profile.ps1"),
+		filepath.Join(docs, "WindowsPowerShell", "Microsoft.PowerShell_profile.ps1"),
+	}
 }
