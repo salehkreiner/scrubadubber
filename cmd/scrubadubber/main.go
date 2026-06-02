@@ -202,11 +202,14 @@ func (a *app) maybeFirstRunProvision() {
 func (a *app) buildHub(s settings.Settings) *hubmanager.Manager {
 	hubPath, _ := config.HubPath()
 	cfgPath, _ := config.HubConfigPath()
-	// The Hub reads its scrubbing mode from config.yaml; "Open config file" in
-	// Settings edits it. Restarting on a settings change re-reads that file.
+	// Scrubbing mode is driven by the Settings dropdown via the Hub's
+	// SCRUB_DEFAULT_MODE env override (applied after config.yaml, so it wins);
+	// applySettings restarts the Hub when the mode changes so it takes effect.
+	// Other scrubbing config stays in config.yaml ("Open config file").
 	return hubmanager.New(hubmanager.Config{
 		HubPath:   hubPath,
 		Args:      []string{"serve", "-config", cfgPath},
+		Env:       []string{"SCRUB_DEFAULT_MODE=" + string(s.Mode)},
 		HealthURL: config.HealthURLFor(s.HubURL),
 		LogWriter: a.hubLog,
 	})

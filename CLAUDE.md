@@ -13,12 +13,15 @@ Hub and bridge binaries — it does not contain scrubbing logic itself.
 
 ```
 scrubadubber (this repo — public)
-    ├── downloads + manages → scrubadubber-hub binary (from private releases)
+    ├── downloads + manages → Hub binary (public mirror: scrubadubber-hub-releases)
     └── downloads + manages → bridge-claude-code binary (from public releases)
 ```
 
-The Hub source stays private. This repo only knows the Hub's binary download URL.
-The scrubbing logic is never exposed here.
+The Hub *source* stays private (scrubadubber-hub); its release workflow
+cross-publishes the compiled binaries (+ SHA256SUMS + config.example.yaml) to the
+public scrubadubber-hub-releases mirror so the installer can fetch them
+unauthenticated. This repo only knows the Hub's binary download URL; the
+scrubbing logic is never exposed here.
 
 ## Target Users
 
@@ -143,11 +146,13 @@ embed a small HTML/JS page in a webview — evaluate and justify):
 
 ## Binary Download URLs (Hub contract)
 
-The installer fetches Hub binaries from scrubadubber-hub GitHub Releases.
-These URLs are the ONLY coupling between this repo and the private Hub repo:
+The installer fetches Hub binaries from the PUBLIC scrubadubber-hub-releases
+mirror (the source repo scrubadubber-hub stays private; its release workflow
+cross-publishes the binaries + SHA256SUMS + config.example.yaml to the mirror).
+These URLs are the ONLY coupling between this repo and the Hub:
 
 ```
-https://github.com/salehkreiner/scrubadubber-hub/releases/download/{tag}/hub\_{os}\_{arch}\[.exe]
+https://github.com/salehkreiner/scrubadubber-hub-releases/releases/download/{tag}/hub\_{os}\_{arch}\[.exe]
 ```
 
 Bridge binaries from public releases:
