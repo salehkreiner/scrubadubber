@@ -202,14 +202,19 @@ func (a *app) maybeFirstRunProvision() {
 func (a *app) buildHub(s settings.Settings) *hubmanager.Manager {
 	hubPath, _ := config.HubPath()
 	cfgPath, _ := config.HubConfigPath()
+	dataDir, _ := config.DataDir()
 	// Scrubbing mode is driven by the Settings dropdown via the Hub's
 	// SCRUB_DEFAULT_MODE env override (applied after config.yaml, so it wins);
 	// applySettings restarts the Hub when the mode changes so it takes effect.
 	// Other scrubbing config stays in config.yaml ("Open config file").
+	//
+	// WorkDir anchors the Hub's relative paths (sqlite state, ./ca/...) under the
+	// data dir instead of whatever CWD the tray inherited at login.
 	return hubmanager.New(hubmanager.Config{
 		HubPath:   hubPath,
 		Args:      []string{"serve", "-config", cfgPath},
 		Env:       []string{"SCRUB_DEFAULT_MODE=" + string(s.Mode)},
+		WorkDir:   dataDir,
 		HealthURL: config.HealthURLFor(s.HubURL),
 		LogWriter: a.hubLog,
 	})

@@ -62,6 +62,7 @@ type Config struct {
 	HubPath   string   // absolute path to the Hub binary
 	Args      []string // arguments, e.g. ["serve"]
 	Env       []string // extra environment, appended to os.Environ()
+	WorkDir   string   // working directory for the Hub process ("" = inherit caller's)
 	HealthURL string   // e.g. http://127.0.0.1:8384/healthz
 	LogWriter io.Writer
 
@@ -84,6 +85,7 @@ type Manager struct {
 	hubPath       string
 	args          []string
 	env           []string
+	workDir       string
 	healthURL     string
 	logw          io.Writer
 	httpClient    *http.Client
@@ -123,6 +125,7 @@ func New(cfg Config) *Manager {
 		hubPath:       cfg.HubPath,
 		args:          cfg.Args,
 		env:           cfg.Env,
+		workDir:       cfg.WorkDir,
 		healthURL:     cfg.HealthURL,
 		logw:          cfg.LogWriter,
 		healthEvery:   def(cfg.HealthEvery, 10*time.Second),
@@ -283,6 +286,10 @@ func (m *Manager) spawnLocked() {
 	cmd.Stdout = m.logw
 	cmd.Stderr = m.logw
 	cmd.Env = append(os.Environ(), m.env...)
+	if m.workDir != "" {
+		_ = os.MkdirAll(m.workDir, 0o755)
+		cmd.Dir = m.workDir
+	}
 
 	if err := cmd.Start(); err != nil {
 		m.logf("hub start failed: %v", err)

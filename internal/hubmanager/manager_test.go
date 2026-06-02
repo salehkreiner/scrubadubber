@@ -26,6 +26,10 @@ func TestHelperHub(t *testing.T) {
 			_ = fh.Close()
 		}
 	}
+	if rel := os.Getenv("HUB_REL_FILE"); rel != "" {
+		// Relative path: lands in the process's working directory (cmd.Dir).
+		_ = os.WriteFile(rel, []byte("x"), 0o644)
+	}
 	if ttl := os.Getenv("HUB_TTL_MS"); ttl != "" {
 		if ms, err := strconv.Atoi(ttl); err == nil {
 			go func() {
@@ -181,6 +185,26 @@ func TestAutoRestartOnCrash(t *testing.T) {
 	}
 	if len(data) < 2 {
 		t.Fatalf("expected the Hub to be (re)started at least twice, got %d starts", len(data))
+	}
+}
+
+func TestWorkDirAnchorsRelativePaths(t *testing.T) {
+	// The Hub writes relative paths (sqlite state, ./ca/...) against its CWD.
+	// Setting WorkDir must redirect those into the data dir, not the caller's CWD.
+	port := freePort(t)
+	work := t.TempDir()
+	cfg := helperConfig(port, []string{"HUB_REL_FILE=hubstate.marker"})
+	cfg.WorkDir = work
+	m := New(cfg)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	m.Run(ctx)
+	m.Start()
+	defer m.Close()
+
+	waitForState(t, m, Healthy, 6*time.Second)
+	if _, err := os.Stat(filepath.Join(work, "hubstate.marker")); err != nil {
+		t.Errorf("relative file should be created under WorkDir: %v", err)
 	}
 }
 
