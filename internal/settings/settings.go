@@ -4,6 +4,7 @@
 package settings
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/url"
@@ -12,6 +13,11 @@ import (
 
 	"github.com/salehkreiner/scrubadubber/internal/config"
 )
+
+// utf8BOM is the UTF-8 byte-order mark. Some Windows editors (and PowerShell's
+// Set-Content -Encoding utf8) prepend it; encoding/json rejects a leading BOM,
+// so we strip it before parsing rather than silently falling back to defaults.
+var utf8BOM = []byte{0xEF, 0xBB, 0xBF}
 
 // Mode is the Hub scrubbing mode.
 type Mode string
@@ -54,6 +60,7 @@ func Load(path string) (Settings, error) {
 		}
 		return s, err
 	}
+	data = bytes.TrimPrefix(data, utf8BOM)
 	if err := json.Unmarshal(data, &s); err != nil {
 		return Default(), fmt.Errorf("parse settings: %w", err)
 	}

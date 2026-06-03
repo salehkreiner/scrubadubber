@@ -56,6 +56,24 @@ func TestLoadFillsDefaultsForPartial(t *testing.T) {
 	}
 }
 
+func TestLoadStripsUTF8BOM(t *testing.T) {
+	// PowerShell's Set-Content -Encoding utf8 (and some editors) prepend a BOM;
+	// encoding/json rejects it, so Load must strip it rather than silently
+	// reverting to defaults.
+	path := filepath.Join(t.TempDir(), "settings.json")
+	body := append([]byte{0xEF, 0xBB, 0xBF}, []byte(`{"mode":"redact"}`)...)
+	if err := os.WriteFile(path, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load with BOM: %v", err)
+	}
+	if got.Mode != ModeRedact {
+		t.Errorf("BOM not stripped; mode reverted to default: %q", got.Mode)
+	}
+}
+
 func TestValidate(t *testing.T) {
 	bad := []Settings{
 		{HubURL: "http://127.0.0.1:8383", Mode: "bogus"},
