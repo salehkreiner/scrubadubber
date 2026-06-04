@@ -66,13 +66,16 @@ func registerUninstaller(uninstaller, binDir string) error {
 	_ = k.SetStringValue("DisplayVersion", version.Version)
 	_ = k.SetStringValue("Publisher", config.AppName)
 	_ = k.SetStringValue("InstallLocation", binDir)
-	_ = k.SetStringValue("UninstallString", fmt.Sprintf(`"%s" --uninstall`, uninstaller))
+	_ = k.SetStringValue("UninstallString", fmt.Sprintf(`"%s" --uninstall --silent`, uninstaller))
 	_ = k.SetDWordValue("NoModify", 1)
 	_ = k.SetDWordValue("NoRepair", 1)
 	return nil
 }
 
 func pause() {
+	if assumeYes {
+		return
+	}
 	fmt.Print("\nPress Enter to close…")
 	_, _ = fmt.Scanln()
 }

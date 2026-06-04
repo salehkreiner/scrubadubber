@@ -18,9 +18,19 @@ import (
 	"github.com/salehkreiner/scrubadubber/internal/version"
 )
 
+// assumeYes runs the installer non-interactively: it skips the end-of-run
+// "Press Enter to close" pause so the tool can be piped (irm … | iex) or driven
+// by install.ps1. The install/uninstall steps themselves have no prompts — this
+// flag only governs the closing pause.
+var assumeYes bool
+
 func main() {
 	uninstall := flag.Bool("uninstall", false, "remove Scrubadubber")
+	yes := flag.Bool("yes", false, "run non-interactively (no prompts or pauses)")
+	silent := flag.Bool("silent", false, "alias for --yes")
 	flag.Parse()
+
+	assumeYes = *yes || *silent
 
 	if *uninstall {
 		runUninstall()
