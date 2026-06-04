@@ -254,7 +254,12 @@ func runScrubSetup(ctx context.Context, scrubSetupPath string) error {
 }
 
 func launch(exePath string) error {
-	return exec.Command(exePath).Start()
+	cmd := exec.Command(exePath)
+	// The installer may be running under a captured pipe (e.g. `irm … | iex`)
+	// and the tray is long-lived, so inheriting the installer's handles or
+	// console would keep that pipe open and hang the caller. Launch detached.
+	cmd.SysProcAttr = detachedSysProcAttr()
+	return cmd.Start()
 }
 
 func fileExists(p string) bool {

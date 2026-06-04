@@ -5,6 +5,7 @@ package provision
 import (
 	"errors"
 	"strings"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -108,4 +109,16 @@ func broadcastEnv() {
 		5000,
 		0,
 	)
+}
+
+// detachedSysProcAttr launches the child with no inherited handles and no
+// console, so a long-lived child (the tray) never holds open the installer's
+// stdio — which may be a pipe (e.g. `irm … | iex`). NoInheritHandles forces
+// CreateProcess(bInheritHandles=FALSE) — not even the standard handles are
+// inherited; DETACHED_PROCESS drops the console.
+func detachedSysProcAttr() *syscall.SysProcAttr {
+	return &syscall.SysProcAttr{
+		CreationFlags:    windows.DETACHED_PROCESS | windows.CREATE_NEW_PROCESS_GROUP,
+		NoInheritHandles: true,
+	}
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 )
 
 const pathMarker = "# added by Scrubadubber"
@@ -62,3 +63,7 @@ func removeFromUserPath(dir string) error {
 	}
 	return os.WriteFile(p, []byte(strings.Join(kept, "\n")), 0o644)
 }
+
+// detachedSysProcAttr needs no special attributes on macOS (the installer is
+// not run under a captured pipe there). Returning nil keeps default behavior.
+func detachedSysProcAttr() *syscall.SysProcAttr { return nil }
