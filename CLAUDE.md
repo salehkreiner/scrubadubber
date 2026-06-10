@@ -4,10 +4,14 @@
 
 The user-facing product. A native system tray app (Windows) and menubar app (macOS)
 that silently manages the Scrubadubber Hub and bridge in the background, giving
-developers one-click protection for their LLM API traffic with zero ongoing friction.
+developers one-click access to **on-device pseudonymization and agent egress
+control** — sensitive values are replaced with reversible pseudonyms before traffic
+leaves the machine, with the re-identification key held locally — at zero ongoing
+friction. Positioning: **free for individuals, enforceable and validated for
+organizations.**
 
 This is the repo users interact with. It downloads, installs, and manages the
-Hub and bridge binaries — it does not contain scrubbing logic itself.
+Hub and bridge binaries — it does not contain pseudonymization logic itself.
 
 ## Architecture Position
 
@@ -21,7 +25,7 @@ The Hub *source* stays private (scrubadubber-hub); its release workflow
 cross-publishes the compiled binaries (+ SHA256SUMS + config.example.yaml) to the
 public scrubadubber-hub-releases mirror so the installer can fetch them
 unauthenticated. This repo only knows the Hub's binary download URL; the
-scrubbing logic is never exposed here.
+pseudonymization logic is never exposed here.
 
 ## Target Users
 
@@ -32,7 +36,7 @@ scrubbing logic is never exposed here.
 ## Strict Scope
 
 Build ONLY the tray/menubar app and its installer. Do not re-implement any
-scrubbing, masking, or detection logic. Do not vendor the Hub or bridge source.
+pseudonymization, masking, or detection logic. Do not vendor the Hub or bridge source.
 
 ## User Experience Goal
 

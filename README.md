@@ -2,12 +2,17 @@
 
 A native **system-tray app (Windows)** and **menubar app (macOS)** that silently
 installs and supervises the Scrubadubber **Hub** and **bridge** in the
-background — giving developers one-click, zero-friction protection for their LLM
-API traffic. You type `claude` exactly as before; nothing changes in your
+background — giving developers one-click, zero-friction **on-device
+pseudonymization and agent egress control** for their LLM API traffic. Sensitive
+values are replaced with reversible pseudonyms before traffic leaves the machine
+and the real values are re-injected into responses, with the re-identification key
+held locally. You type `claude` exactly as before; nothing changes in your
 workflow.
 
-This repo is the **user-facing product**. It downloads, installs, and manages the
-Hub and bridge binaries — it contains **no scrubbing logic** itself.
+Scrubadubber is **free for individuals, enforceable and validated for
+organizations**. This repo is the **user-facing product**. It downloads, installs,
+and manages the Hub and bridge binaries — it contains **no pseudonymization logic**
+itself.
 
 ```
 scrubadubber (this repo — public)
@@ -54,7 +59,7 @@ and **Check for Updates**.
 `127.0.0.1` (token-gated, never exposed off-machine):
 
 - **Hub URL** — point at a shared/enterprise Hub
-- **Scrubbing mode** — `mask` / `redact` / `off`
+- **Scrubbing mode** — `mask` (reversible pseudonymization) / `redact` / `off`
 - **Start on login** — toggle
 - **Open config file** — edit the Hub's `config.yaml`
 - **Protected tools** — Claude Code (more coming)
